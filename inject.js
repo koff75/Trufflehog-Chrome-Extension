@@ -19,6 +19,11 @@
                 if (scriptSRC.startsWith("//")){
                     scriptSRC = location.protocol + scriptSRC
                 }
+                try {
+                    var u = new URL(scriptSRC, window.location.href);
+                    if (u.protocol !== 'http:' && u.protocol !== 'https:') { continue; }
+                    scriptSRC = u.href;
+                } catch(e) { continue; }
                 chrome.runtime.sendMessage({"scriptUrl": scriptSRC, "parentUrl": window.location.href, "parentOrigin": window.origin});
             }
 

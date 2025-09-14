@@ -6,6 +6,28 @@ https://www.youtube.com/watch?v=i9b5Yij_HV4
 
 https://join.slack.com/t/trufflehog-community/shared_invite/zt-nzznzf8w-y1Lg4PnnLupzlYuwq_AUHA
 
+## Manifest V3
+
+Cette extension a été migrée vers Chrome Manifest V3:
+- Service worker en arrière-plan (`background.js`) au lieu d'un script persistant
+- Remplacement de `chrome.browserAction` par `chrome.action`
+- Remplacement de `alert()` par `chrome.notifications`
+- Remplacement de `chrome.tabs.getSelected` par `chrome.tabs.query`
+- Les autorisations d'hôtes sont déclarées sous `host_permissions`
+
+## Installation manuelle (Chrome)
+
+1. Ouvrir `chrome://extensions/`
+2. Activer « Mode développeur » (en haut à droite)
+3. Cliquer sur « Charger l’extension non empaquetée »
+4. Sélectionner le dossier du projet (contenant `manifest.json`)
+5. L’extension se charge; utilisez le bouton d’action pour ouvrir le popup.
+
+Notes:
+- Aucune compilation n'est nécessaire; c'est une extension « unpacked ».
+- Si vous mettez à jour les fichiers, cliquez sur « Actualiser » sur la carte de l’extension.
+- Pour empaqueter en `.crx`, utilisez « Empaqueter l’extension » sur `chrome://extensions/`.
+
 ## Install instructions
 
 The extension is available for install here https://chrome.google.com/webstore/detail/trufflehog/bafhdnhjnlcdbjcdcnafhdcphhnfnhjc

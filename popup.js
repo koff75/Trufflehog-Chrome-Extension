@@ -60,23 +60,42 @@ for (i = 0; i < acc.length; i++) {
         el.value = result.originDenyList.join(",");
         el.focus();
       })
-      chrome.tabs.getSelected(null,function(tab) {
-
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (!tabs || !tabs[0]) { return; }
+        var tab = tabs[0];
         var origin = (new URL(tab.url)).origin;
         chrome.storage.sync.get(["leakedKeys"], function(result) {
-            var keys = result.leakedKeys[origin];
+            var keys = result.leakedKeys ? result.leakedKeys[origin] : [];
             let keyInfo = "";
             let htmlList = "";
             if(!keys){keys = []}
-            for (key of keys){
+            for (let key of keys){
                 keyInfo = key["key"] + ": " + key["match"] + " found in " + key["src"];
                 if (key["encoded"]){
                      keyInfo += " decoded from " + key["encoded"].substring(0,9) + "..."
                 }
                 keyInfo = htmlEntities(keyInfo);
-                htmlList += "<li>" + keyInfo + "</li>\n"
+                var copyPayload = htmlEntities(key["match"]);
+                var link = key["src"] ? (" <a href=\"" + htmlEntities(key["src"]) + "\" target=\"_blank\" rel=\"noopener noreferrer\">open</a>") : "";
+                htmlList += "<li>" + keyInfo + link + " <button class=\"copyFinding\" data-text=\"" + copyPayload + "\">Copy</button></li>\n"
             }
             document.getElementById("findingList").innerHTML = htmlList;
+            var buttons = document.getElementsByClassName('copyFinding');
+            for (var j = 0; j < buttons.length; j++){
+                buttons[j].addEventListener('click', function(e){
+                    var text = e.target.getAttribute('data-text');
+                    navigator.clipboard.writeText(text).catch(function(){
+                        try {
+                            var ta = document.createElement('textarea');
+                            ta.value = text;
+                            document.body.appendChild(ta);
+                            ta.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(ta);
+                        } catch(err) {}
+                    });
+                });
+            }
         })
       })
 
@@ -103,24 +122,54 @@ var downloadCSV = function(){
 document.getElementById("downloadAllFindings").addEventListener("click", function() {
     downloadCSV();
 })
+document.getElementById("copyAllFindings").addEventListener("click", function() {
+    chrome.storage.sync.get(["leakedKeys"], function(result) {
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            if (!tabs || !tabs[0]) { return; }
+            var tab = tabs[0];
+            var origin = (new URL(tab.url)).origin;
+            var keys = (result.leakedKeys && result.leakedKeys[origin]) ? result.leakedKeys[origin] : [];
+            var lines = [];
+            for (var i=0;i<keys.length;i++){
+                var k = keys[i];
+                var line = k["key"] + ": " + k["match"] + " | src=" + k["src"] + (k["encoded"] ? (" | decoded from=" + k["encoded"]) : "");
+                lines.push(line);
+            }
+            var text = lines.join("\n");
+            navigator.clipboard.writeText(text).catch(function(){
+                try {
+                    var ta = document.createElement('textarea');
+                    ta.value = text;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                } catch(err) {}
+            });
+        })
+    })
+})
 document.getElementById("clearOriginFindings").addEventListener("click", function() {
     chrome.storage.sync.get(["leakedKeys"], function(result) {
-        chrome.tabs.getSelected(null,function(tab) {
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            if (!tabs || !tabs[0]) { return; }
+            var tab = tabs[0];
             var origin = (new URL(tab.url)).origin;
+            if (!result.leakedKeys) { result.leakedKeys = {}; }
             result.leakedKeys[origin] = {};
             chrome.storage.sync.set({"leakedKeys": result.leakedKeys});
-            chrome.browserAction.setBadgeText({text: ''});
+            chrome.action.setBadgeText({text: ''});
             document.getElementById("findingList").innerHTML = "";
         })
     })
 })
 document.getElementById("clearAllFindings").addEventListener("click", function() {
     chrome.storage.sync.get(["leakedKeys"], function(result) {
-        chrome.tabs.getSelected(null,function(tab) {
-            var origin = (new URL(tab.url)).origin;
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            if (!tabs || !tabs[0]) { return; }
             result.leakedKeys = {};
             chrome.storage.sync.set({"leakedKeys": result.leakedKeys});
-            chrome.browserAction.setBadgeText({text: ''});
+            chrome.action.setBadgeText({text: ''});
             document.getElementById("findingList").innerHTML = "";
         })
     })
