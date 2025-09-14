@@ -289,13 +289,26 @@ var updateTab = function(){
         if (!tabs || !tabs[0]) { return; }
         var tab = tabs[0];
         var tabId = tab.id;
-        var tabUrl = tab.url;
-        var origin = (new URL(tabUrl)).origin
+        var tabUrl = tab.url || '';
+        var origin = '';
+        try {
+            var u = new URL(tabUrl);
+            if (u.protocol === 'http:' || u.protocol === 'https:') {
+                origin = u.origin;
+            }
+        } catch(e) {}
+        if (!origin) {
+            try { chrome.action.setBadgeText({text: '', tabId: tabId}); } catch(e) {}
+            return;
+        }
         chrome.storage.sync.get(["leakedKeys"], function(result) {
-            var keysForOrigin = result.leakedKeys && result.leakedKeys[origin];
+            var keys = result.leakedKeys || {};
+            var keysForOrigin = keys[origin];
             var originKeys = Array.isArray(keysForOrigin) ? keysForOrigin.length.toString() : "";
-            chrome.action.setBadgeText({text: originKeys});
-            chrome.action.setBadgeBackgroundColor({color: '#ff0000'});
+            try {
+                chrome.action.setBadgeText({text: originKeys, tabId: tabId});
+                chrome.action.setBadgeBackgroundColor({color: '#ff0000', tabId: tabId});
+            } catch(e) {}
         })
     });
 }
